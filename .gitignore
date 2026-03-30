@@ -7,3 +7,5 @@ venv/
 .env/
 .venv/
 .idea/
+database/**
+migrations/**

@@ -7,11 +7,11 @@ from schemas.rent_schema import RentSchema
 
 class RentService:
 
-    def add_rent(self, form: RentSchema) -> Dict[str, Any]:
-        rent = Rent(form.rent_date,
-                    form.hours_rented,
-                    form.rent_amount,
-                    form.renter
+    def add_rent(self, payload: RentSchema) -> Dict[str, Any]:
+        rent = Rent(payload.rent_date,
+                    payload.hours_rented,
+                    payload.rent_amount,
+                    payload.renter
                     )
         db.session.add(rent)
         db.session.commit()

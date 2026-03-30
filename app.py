@@ -1,8 +1,18 @@
-from flask import Flask
+from flask import Flask, redirect, Response
+from flask_cors import CORS
+from flask_openapi3 import OpenAPI, Info, Tag
+
 from extensions import db, migrate
 
+
 def create_app():
-    app = Flask(__name__)
+    info = Info(title="Trampoline Rental API", version="0.0.1")
+    app = OpenAPI(__name__, info=info)
+    CORS(app)
+
+    home_tag = Tag(name="Documentação", description="Seleção de documentação: Swagger, Redoc ou RapiDoc")
+    rent_tag = Tag(name="Rent", description="Registro e gestão de aluguéis de trampolins.")
+
     app.config.from_pyfile('config.py')
 
     db.init_app(app)
@@ -16,9 +26,16 @@ def create_app():
 
     service = RentService()
 
-    @app.route("/rent", methods=["POST",])
-    def add_rent(form: RentSchema):
-        return service.add_rent(form)
+    @app.get('/', tags=[home_tag])
+    def home():
+        """
+        Redireciona a raiz para a documentação interativa da API (OpenAPI).
+        """
+        return redirect('/openapi')
+
+    @app.post("/rent", tags=[rent_tag])
+    def add_rent(payload: RentSchema):
+        return service.add_rent(payload)
 
     return app
 
