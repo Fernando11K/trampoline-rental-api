@@ -11,7 +11,7 @@ def create_app():
     CORS(app)
 
     home_tag = Tag(name="Documentação", description="Seleção de documentação: Swagger, Redoc ou RapiDoc")
-    rent_tag = Tag(name="Rent", description="Registro e gestão de aluguéis de trampolins.")
+    rent_tag = Tag(name="Rent", description="Registro, consulta e gestão de aluguéis de trampolins")
 
     app.config.from_pyfile('config.py')
 
@@ -34,9 +34,14 @@ def create_app():
         return redirect('/openapi')
 
     @app.post("/rent", tags=[rent_tag])
-    def add_rent(payload: RentSchema):
-        return service.add_rent(payload)
+    def add_rent(form: RentSchema):
+        return service.add_rent(form)
+    
 
+
+    @app.get("/rent", tags=[rent_tag])
+    def get_all():
+        return service.getAll()
     return app
 
 
