@@ -2,6 +2,7 @@ from flask import Flask, redirect, Response
 from flask_cors import CORS
 from flask_openapi3 import OpenAPI, Info, Tag
 
+from core.error_handlers import register_error_handlers
 from extensions import db, migrate
 from schemas.error_schema import ErrorSchema
 from schemas.rent_path import RentIdPath
@@ -38,21 +39,26 @@ def create_app():
 
     @app.post("/rent", tags=[rent_tag], responses={"201": RentViewSchema, "409": ErrorSchema})
     def add_rent(form: RentSchema):
+        """
+        Resgistra um aluguel
+        """
         return service.add_rent(form)
 
     @app.get("/rent", tags=[rent_tag])
     def get_all():
         """
-        Retona todos os aluguéis de trampolinas
+        Retona todos os aluguéis
         """
         return service.get_all()
 
     @app.get("/rent/<int:rent_id>", tags=[rent_tag])
     def get_by_id(path: RentIdPath):
         """
-          Busca o aluguel pelo id
+          Consulta o aluguel pelo id
           """
         return service.get_by_id(path.rent_id)
+
+    register_error_handlers(app)
 
     return app
 

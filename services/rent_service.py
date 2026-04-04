@@ -2,6 +2,7 @@ import logging
 
 from sqlalchemy import select, exists
 
+from core.exceptions import ConflictError, NotFoundError
 from extensions import db
 from models.rent import Rent
 from schemas.rent_schema import RentSchema, RentViewSchema  # FIXME verificar
@@ -17,30 +18,25 @@ class RentService:
                 "Aluguel rejeitado: data %s já possui registro",
                 payload.rent_date,
             )
-            return {"message": "Já existe um aluguel para a data informada"}, 409
+            raise ConflictError("Já existe um aluguel para a data informada")
 
-        rent = Rent(
-            payload.rent_date,
-            payload.hours_rented,
-            payload.rent_amount,
-            payload.renter
-        )
+        rent = Rent(payload.rent_date, payload.hours_rented, payload.rent_amount, payload.renter)
         try:
             db.session.add(rent)
             db.session.commit()
+
+            logger.info("Aluguel criado id=%s rent_date=%s", rent.id, rent.rent_date)
+            return {
+                "id": rent.id,
+                "rent_date": rent.rent_date.isoformat() if rent.rent_date else None,
+                "hours_rented": rent.hours_rented,
+                "rent_amount": float(rent.rent_amount),
+                "renter": rent.renter,
+            }, 201
         except Exception:
+            db.session.rollback()
             logger.exception("Falha ao persistir aluguel")
-            return {"message": "Ops! Tivemos um problema ao registrar o aluguel. Tente novamente."}, 500
-
-        logger.info("Aluguel criado id=%s rent_date=%s", rent.id, rent.rent_date)
-
-        return {
-            "id": rent.id,
-            "rent_date": rent.rent_date.isoformat() if rent.rent_date else None,
-            "hours_rented": rent.hours_rented,
-            "rent_amount": float(rent.rent_amount),
-            "renter": rent.renter
-        }, 201
+            raise
 
     def get_by_id(self, rent_id: int) -> tuple[dict, int]:
         stmt = select(Rent).where(Rent.id == rent_id)
@@ -48,7 +44,7 @@ class RentService:
         if not rent:
             error_message: str = "Aluguel não encontrato"
             logger.info(error_message, rent_id)
-            return {"message": error_message}, 404
+            raise NotFoundError(error_message)
 
         return self.convert_to_json(rent), 200
 
