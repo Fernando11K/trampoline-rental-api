@@ -1,11 +1,11 @@
 import logging
 
-from sqlalchemy import select, exists
+from sqlalchemy import select, exists, and_
 
 from core.exceptions import BusinessError, ConflictError, InternalError, NotFoundError
 from extensions import db
 from models.rent import Rent
-from schemas.rent_schema import RentSchema, RentViewSchema  # FIXME verificar
+from schemas.rent_schema import RentSchema, RentViewSchema
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +15,12 @@ class RentService:
 
     def add_rent(self, payload: RentSchema) -> tuple[dict, int]:
         try:
-            if self._exists_by_rent_date(payload.rent_date):
+            if self._active_rent_on_date(payload.rent_date):
                 logger.info(
                     "Aluguel rejeitado: data %s já possui registro",
                     payload.rent_date,
                 )
-                raise ConflictError("Já existe um aluguel para a data informada")
+                raise ConflictError(f"Já existe um aluguel agendado para a data {payload.rent_date}")
 
             rent = Rent(payload.rent_date, payload.hours_rented, payload.rent_amount, payload.renter)
             db.session.add(rent)
@@ -73,28 +73,26 @@ class RentService:
                 "Não foi possível listar os aluguéis. Tente novamente.",
             )
 
-
     def cancel(self, rent_id: int):
         rent = db.session.get(Rent, rent_id)
         if not rent:
             raise NotFoundError(self.ALUGUEL_NAO_LOCALIZADO)
         db.session.delete(rent)
         db.session.commit()
-        return {"message": 'Aluguel cancelado com sucesso!' }, 200
+        return {"message": 'Aluguel cancelado com sucesso!'}, 200
 
     def delete_by_id(self, rent_id: int):
         rent = db.session.get(Rent, rent_id)
         if not rent:
             raise NotFoundError(self.ALUGUEL_NAO_LOCALIZADO)
-        db.session.delete(rent)
+        rent.canceled = True
         db.session.commit()
-        return {"message": 'Aluguel cancelado com sucesso!' }, 200
+
+        return {"message": "Aluguel cancelado com sucesso!"}, 200
 
     def _rent_to_view(self, rent: Rent) -> dict:
         return RentViewSchema.model_validate(rent).model_dump(mode="json")
 
-    def _exists_by_rent_date(self, rent_date) -> bool:
-        stmt = select(exists().where(Rent.rent_date == rent_date))
+    def _active_rent_on_date(self, rent_date) -> bool:
+        stmt = select(exists().where(and_(Rent.rent_date == rent_date, Rent.canceled == False)))
         return db.session.scalar(stmt)
-
-
