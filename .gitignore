@@ -7,5 +7,9 @@ venv/
 .env/
 .venv/
 .idea/
+
+# SQLite local (criado pelo app). Remova esta linha se for versionar o arquivo do banco.
 database/**
-migrations/**
+
+# Só as revisões geradas localmente; env.py, alembic.ini etc. em migrations/ continuam versionados.
+migrations/versions/
