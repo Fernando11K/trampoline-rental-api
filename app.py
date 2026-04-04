@@ -58,6 +58,10 @@ def create_app():
           """
         return service.get_by_id(path.rent_id)
 
+    @app.delete("/rent/<int:rent_id>", tags=[rent_tag])
+    def delete_by_id(path: RentIdPath):
+        return service.delete_by_id(path.rent_id)
+
     register_error_handlers(app)
 
     return app

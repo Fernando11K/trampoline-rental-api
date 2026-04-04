@@ -12,6 +12,7 @@ class Rent(db.Model):
     hours_rented = db.Column(db.Integer, nullable=False)
     rent_amount = db.Column(db.Numeric(10, 2), nullable=False)
     renter = db.Column(db.String, nullable=False)
+    canceled = db.Column(db.Boolean, nullable=False, default=False)
 
     def __init__(self, rent_date: date, hours_rented: int, rent_amount: Decimal, renter: str):
         self.rent_date = rent_date

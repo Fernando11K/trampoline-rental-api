@@ -23,6 +23,6 @@ def register_error_handlers(app):
         return jsonify({
             "status": HTTPStatus.INTERNAL_SERVER_ERROR.value,
             "error": HTTPStatus.INTERNAL_SERVER_ERROR.name,
-            "message": "Ops! Tivemos um problema ao registrar o aluguel. Tente novamente.",
+            "message": "Ocorreu um erro inesperado. Tente novamente.",
             "timestamp": datetime.now().isoformat(),
         }), HTTPStatus.INTERNAL_SERVER_ERROR.value
