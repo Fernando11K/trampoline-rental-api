@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 
 class ErrorSchema(BaseModel):
-    """ Define como uma mensagem de eero será representada
+    """
+    Representa a estrutura padrão de erro retornada pela API.
     """
     message: str

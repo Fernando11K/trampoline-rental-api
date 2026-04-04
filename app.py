@@ -3,6 +3,9 @@ from flask_cors import CORS
 from flask_openapi3 import OpenAPI, Info, Tag
 
 from extensions import db, migrate
+from schemas.error_schema import ErrorSchema
+from schemas.rent_path import RentIdPath
+from schemas.rent_schema import RentViewSchema
 
 
 def create_app():
@@ -11,7 +14,7 @@ def create_app():
     CORS(app)
 
     home_tag = Tag(name="Documentação", description="Seleção de documentação: Swagger, Redoc ou RapiDoc")
-    rent_tag = Tag(name="Rent", description="Registro, consulta e gestão de aluguéis de trampolins")
+    rent_tag = Tag(name="Rent", description="Registro, consulta, alteração e cancelamento de aluguéis de trampolins")
 
     app.config.from_pyfile('config.py')
 
@@ -33,15 +36,24 @@ def create_app():
         """
         return redirect('/openapi')
 
-    @app.post("/rent", tags=[rent_tag])
+    @app.post("/rent", tags=[rent_tag], responses={"201": RentViewSchema, "409": ErrorSchema})
     def add_rent(form: RentSchema):
         return service.add_rent(form)
-    
-
 
     @app.get("/rent", tags=[rent_tag])
     def get_all():
-        return service.getAll()
+        """
+        Retona todos os aluguéis de trampolinas
+        """
+        return service.get_all()
+
+    @app.get("/rent/<int:rent_id>", tags=[rent_tag])
+    def get_by_id(path: RentIdPath):
+        """
+          Busca o aluguel pelo id
+          """
+        return service.get_by_id(path.rent_id)
+
     return app
 
 
