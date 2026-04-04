@@ -15,7 +15,7 @@ def create_app():
     CORS(app)
 
     home_tag = Tag(name="Documentação", description="Seleção de documentação: Swagger, Redoc ou RapiDoc")
-    rent_tag = Tag(name="Rent", description="Registro, consulta, alteração e cancelamento de aluguéis de trampolins")
+    rent_tag = Tag(name="Rent", description="Registro, consulta e cancelamento de aluguéis de trampolins")
 
     app.config.from_pyfile('config.py')
 
@@ -40,14 +40,14 @@ def create_app():
     @app.post("/rent", tags=[rent_tag], responses={"201": RentViewSchema, "409": ErrorSchema})
     def add_rent(form: RentSchema):
         """
-        Resgistra um aluguel
+        Registra um aluguel
         """
         return service.add_rent(form)
 
     @app.get("/rent", tags=[rent_tag])
     def get_all():
         """
-        Retona todos os aluguéis
+        Retorna os aluguéis ativos (não cancelados).
         """
         return service.get_all()
 

@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 class RentService:
     ALUGUEL_NAO_LOCALIZADO = "Aluguel não localizado"
+    ALUGUEL_ESTA_CANCELADO = "Este aluguel está cancelado"
+    MSG_ALUGUEL_CANCELADO = "Aluguel cancelado com sucesso!"
 
     def add_rent(self, payload: RentSchema) -> tuple[dict, int]:
         try:
@@ -42,10 +44,11 @@ class RentService:
             stmt = select(Rent).where(Rent.id == rent_id)
             rent = db.session.scalars(stmt).first()
             if not rent:
-                error_message = self.ALUGUEL_NAO_LOCALIZADO
-                logger.info("%s id=%s", error_message, rent_id)
-                raise NotFoundError(error_message)
-
+                logger.info("%s id=%s", self.ALUGUEL_NAO_LOCALIZADO, rent_id)
+                raise NotFoundError(self.ALUGUEL_NAO_LOCALIZADO)
+            if rent.canceled:
+                raise BusinessError(self.ALUGUEL_ESTA_CANCELADO)
+            
             return self._rent_to_view(rent), 200
         except BusinessError:
             raise
@@ -56,9 +59,9 @@ class RentService:
 
     def get_all(self) -> tuple[list[dict], int]:
         try:
-            stmt = select(Rent)
+            stmt = select(Rent).where(Rent.canceled == False)
             rents = db.session.scalars(stmt).all()
-            logger.debug("Listando aluguéis: %s registro(s)", len(rents))
+            logger.debug("Listando aluguéis ativos: %s registro(s)", len(rents))
 
             lista_rents = []
             for r in rents:
@@ -69,26 +72,18 @@ class RentService:
         except Exception:
             db.session.rollback()
             logger.exception("Falha ao listar aluguéis")
-            raise InternalError(
-                "Não foi possível listar os aluguéis. Tente novamente.",
-            )
-
-    def cancel(self, rent_id: int):
-        rent = db.session.get(Rent, rent_id)
-        if not rent:
-            raise NotFoundError(self.ALUGUEL_NAO_LOCALIZADO)
-        db.session.delete(rent)
-        db.session.commit()
-        return {"message": 'Aluguel cancelado com sucesso!'}, 200
+            raise InternalError("Não foi possível listar os aluguéis. Tente novamente mais tarde.")
 
     def delete_by_id(self, rent_id: int):
         rent = db.session.get(Rent, rent_id)
         if not rent:
             raise NotFoundError(self.ALUGUEL_NAO_LOCALIZADO)
+        if rent.canceled:
+            raise BusinessError(self.ALUGUEL_ESTA_CANCELADO)
         rent.canceled = True
         db.session.commit()
 
-        return {"message": "Aluguel cancelado com sucesso!"}, 200
+        return {"message": self.MSG_ALUGUEL_CANCELADO}, 200
 
     def _rent_to_view(self, rent: Rent) -> dict:
         return RentViewSchema.model_validate(rent).model_dump(mode="json")
